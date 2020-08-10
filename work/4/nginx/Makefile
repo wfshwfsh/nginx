@@ -16,6 +16,7 @@ clean:
 		#echo $$dir; \
         make clean -C $$dir; \
 	done
+	@rm -f *.app
 
 help:
 	@echo $(BUILD_DIR)

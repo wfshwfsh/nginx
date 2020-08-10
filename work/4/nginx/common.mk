@@ -1,16 +1,16 @@
 ifeq ($(DEBUG),true)
 #-g是生成调试信息。GNU调试器可以利用该信息
-CC = gcc -g
+CC = g++ -g
 VERSION = debug
 else
-CC = gcc
+CC = g++
 VERSION = release
 endif
 
 
-SRCS = $(wildcard *.c)
-OBJS = $(SRCS:.c=.o)
-DEPS = $(SRCS:.c=.d)
+SRCS = $(wildcard *.cxx)
+OBJS = $(SRCS:.cxx=.o)
+DEPS = $(SRCS:.cxx=.d)
 
 BIN := $(addprefix $(BUILD_ROOT)/, $(BIN))
 
@@ -33,13 +33,13 @@ all: $(DEPS) $(OBJS) $(BIN)
 
 #build rules for DEPS
 #gcc -MM 輸出編譯所有用到的對應關聯文件
-$(DEP_DIR)/%.d:%.c
-	#@echo -n $(LINK_OBJ_DIR)/ > $@
-	#$(CC) -I$(INCLUDE_PATH) -MM $^ >> $@
+$(DEP_DIR)/%.d:%.cxx
+	@echo -n $(LINK_OBJ_DIR)/ > $@
+	$(CC) -I$(INCLUDE_PATH) -MM $^ >> $@
 
 #build rules for OBJS
-$(LINK_OBJ_DIR)/%.o:%.c
-	$(CC) -I$(INCLUDE_PATH) -o $@ -c $(filter %.c,$^)
+$(LINK_OBJ_DIR)/%.o:%.cxx
+	$(CC) -I$(INCLUDE_PATH) -o $@ -c $(filter %.cxx,$^)
 
 #link all objs
 $(BIN): $(ALL_LINK_OBJ)
@@ -47,8 +47,8 @@ $(BIN): $(ALL_LINK_OBJ)
 
 clean: 
 	@echo "sub-folder clean"
-	rm -r $(LINK_OBJ_DIR)
-	rm -r $(DEP_DIR)
+	rm -rf $(LINK_OBJ_DIR)
+	rm -rf $(DEP_DIR)
 
 help:
 	@echo $(SRCS)
