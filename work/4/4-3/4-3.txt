@@ -1,0 +1,66 @@
+	//一：基础设施之日志打印实战代码一
+	//1-3万行代码，想收获多少就要付出多少，平衡
+	//注意代码的保护，私密性
+	//日志的重要性：供日后运行维护人员去查看、定位和解决问题；
+	//新文件：ngx_printf.cxx以及ngx_log.cxx。
+	//ngx_printf.cxx：放和打印格式相关的函数；
+	//ngx_log.cxx：放和日志相关的函数；
+
+	//ngx_log_stderr()  :三个特殊文件描述符【三章七节】，谈到了标准错误 STDERR_FILENO，代表屏幕
+	//ngx_log_stderr()：往屏幕上打印一条错误信息；功能类似于printf
+	//printf("mystring=%s,myint=%d，%d","mytest",15,20);
+	//(1)根据可变的参数，组合出一个字符串:mystring=mytest,myint=15，20
+	//(2)往屏幕上显示出这个组合出来的字符串；
+	//讲解ngx_log_stderr()函数的理由：
+	//(1)提高大家编码能力；
+	//(2)ngx_log_stderr()：可以支持任意我想支持的格式化字符 %d， %f,对于扩展原有功能非常有帮助
+	//(i)void ngx_log_stderr(int err, const char *fmt, ...)
+	//(i)    p = ngx_vslprintf(p,last,fmt,args); //实现了自我可定制的printf类似的功能
+    //   fmt: "mystring=%s,myint=%d，%d"
+    //   args: "mytest",15,20
+	//(i)        buf = ngx_sprintf_num(buf, last, ui64, zero, hex, width);
+	//(i)    p = ngx_log_errno(p, last, err);
+
+	//二：设置时区
+	//我们要设置成CST时区,以保证日期，时间显示的都正确
+	//我们常看到的时区，有如下几个：
+	//a)PST【PST美国太平洋标准时间】 = GMT - 8;
+	//b)GMT【格林尼治平均时间Greenwich Mean Time】等同于英国伦敦本地时间
+	//c)UTC【通用协调时Universal Time Coordinated】 = GMT
+	//d)CST【北京时间：北京时区是东八区，领先UTC八个小时】
+    //tzselect修改時間
+    //sudo cp /usr/share/zoneinfo/Asia/Taipei /etc/localtime 儲存, 否則重開就沒了
+    
+	//三：基础设施之日志打印实战代码二
+	//（3.1）日志等级划分
+	//划分日志等级，一共分8级，分级的目的是方便管理，显示，过滤等等；
+	//日志级别从高到低，数字最小的级别最高，数字最大的级别最低；
+        #define NGX_LOG_STDERR            0    //控制台错误【stderr】：最高级别日志，日志的内容不再写入log
+                                               // 参数指定的文件，而是会直接将日志输出到标准错误设备比如控制台屏幕
+        #define NGX_LOG_EMERG             1    //紧急 【emerg】
+        #define NGX_LOG_ALERT             2    //警戒 【alert】
+        #define NGX_LOG_CRIT              3    //严重 【crit】
+        #define NGX_LOG_ERR               4    //错误 【error】：属于常用级别
+        #define NGX_LOG_WARN              5    //警告 【warn】：属于常用级别
+        #define NGX_LOG_NOTICE            6    //注意 【notice】
+        #define NGX_LOG_INFO              7    //信息 【info】
+        #define NGX_LOG_DEBUG             8    //调试 【debug】：最低级别
+
+	//（3.2）配置文件中和日志有关的选项
+        //nginx.conf
+        [Log]
+        #Log=logs/error.log => 若放在子目錄, 務必確認該目錄是否已創建!
+        Log=error.log
+
+        #只打印日志等级<= 数字 的日志到日志文件中 ，日志等级0-8,0级别最高，8级别最低。
+        LogLevel = 8
+    
+	//继续介绍void ngx_log_init();打开/创建日志文件
+	//介绍 ngx_log_error_core() 函数：写日志文件的核心函数
+	//ngx_slprintf
+	//    ngx_vslprintf
+
+	//四：捋顺main函数中代码执行顺序
+
+
+

@@ -1,0 +1,17 @@
+111111
+make[1]: Entering directory '/home/will/nginx/work/4/nginx/signal'
+echo -n /home/will/nginx/work/4/nginx/app/link_obj/ > /home/will/nginx/work/4/nginx/app/dep/ngx_signal.d
+gcc -I/home/will/nginx/work/4/nginx/_include -MM ngx_signal.c >> /home/will/nginx/work/4/nginx/app/dep/ngx_signal.d
+gcc -g -I/home/will/nginx/work/4/nginx/_include -o /home/will/nginx/work/4/nginx/app/link_obj/ngx_signal.o -c ngx_signal.c
+make[1]: Leaving directory '/home/will/nginx/work/4/nginx/signal'
+111111
+make[1]: Entering directory '/home/will/nginx/work/4/nginx/app'
+echo -n /home/will/nginx/work/4/nginx/app/link_obj/ > /home/will/nginx/work/4/nginx/app/dep/nginx.d
+gcc -I/home/will/nginx/work/4/nginx/_include -MM nginx.c >> /home/will/nginx/work/4/nginx/app/dep/nginx.d
+echo -n /home/will/nginx/work/4/nginx/app/link_obj/ > /home/will/nginx/work/4/nginx/app/dep/ngx_conf.d
+gcc -I/home/will/nginx/work/4/nginx/_include -MM ngx_conf.c >> /home/will/nginx/work/4/nginx/app/dep/ngx_conf.d
+gcc -g -I/home/will/nginx/work/4/nginx/_include -o /home/will/nginx/work/4/nginx/app/link_obj/nginx.o -c nginx.c
+gcc -g -I/home/will/nginx/work/4/nginx/_include -o /home/will/nginx/work/4/nginx/app/link_obj/ngx_conf.o -c ngx_conf.c
+------------------------build debug mode--------------------------------!!!
+gcc -g -o /home/will/nginx/work/4/nginx/nginx /home/will/nginx/work/4/nginx/app/link_obj/ngx_signal.o /home/will/nginx/work/4/nginx/app/link_obj/nginx.o /home/will/nginx/work/4/nginx/app/link_obj/ngx_conf.o
+make[1]: Leaving directory '/home/will/nginx/work/4/nginx/app'

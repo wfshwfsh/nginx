@@ -1,0 +1,112 @@
+3-2
+
+#使用xshell多個視窗連入 => 觀察ps bash:
+
+    //第1個視窗 => pts/1, Pid = 8429
+    will@will-VirtualBox:~$ ps -ef |grep bash
+    will      8429  8428  1 12:30 pts/1    00:00:00 -bash
+    will      8495  8429  0 12:30 pts/1    00:00:00 grep --color=auto bash
+
+    //第2個視窗 => pts/17, Pid = 8533
+    will@will-VirtualBox:~$ ps -ef |grep bash
+    will      8429  8428  0 12:30 pts/1    00:00:00 -bash
+    will      8533  8532  4 12:30 pts/17   00:00:00 -bash
+    will      8548  8533  0 12:30 pts/17   00:00:00 grep --color=auto bash
+
+#寫個簡易死循環程序(nginx), 從xshell執行; 再從另一個xhell查看:
+    will@will-VirtualBox:~$ ps -ef |grep nginx
+    will      8556  8429  0 12:31 pts/1    00:00:00 ./nginx
+    will      8560  8533  0 12:31 pts/17   00:00:00 grep --color=auto nginx
+    => 發現nginx在執行且 parent pid = 8429 (第1個視窗的Pid)
+
+    #直接將第1個視窗關閉, 再用ps查看
+    => 發現"沒有nginx進程", 為何消失了?
+    => nginx parent pid = 8429 (即nginx屬於第1個視窗bash的子進程)
+
+    //Note:
+	//每个进程还属于一个进程组:一个或者多个进程的集合，每个进程组有一个唯一的进程组ID
+    // ，可以调用系统 函数来创建进程组、加入进程组
+	//“会话”(session)：是一个或者多个进程组的集合
+	//一般，只要不进行特殊的系统函数调用，一个bash(shell)上边运行的所有程序都属于一个会话，
+    // 而这个会话有一个session leader；
+	//那么这个bash(shell)通常就是session leader; 你可以调用系统功函数创建新的session。
+    
+    
+#ps -eo pid,ppid,sid,tty,pgrp,comm | grep -E 'bash|PID|nginx'
+  PID  PPID   SID TT        PGRP COMMAND
+ 8429  8428  8429 pts/1     8429 bash
+ 8533  8532  8533 pts/17    8533 bash
+ 8843  8429  8429 pts/1     8843 nginx
+
+//a)如果把xshell终端要断开的话，系统就会发送SIGHUP信号（终端断开信号），给session leader,也就是这个bash进程
+//b)bash进程 收到 SIGHUP信号后，bash会把这个信号发送给session里边的所有进程
+//    ，收到这个SIGHUP信号的进程的缺省动作就是退出；
+
+//（2.4）strace工具的使用
+	//linux下调试分析诊断工具:可以跟踪程序执行时进程的系统调用以及所收到的信号；
+	//a)跟踪nginx进程   :   
+        # sudo strace -e trace=signal -p <nginx_pid 8556>          (用第2個視窗)
+        # sudo strace -e trace=signal -p <nginx's parent pid 8429> (用第3個視窗)
+        
+    //b)關閉nginx所屬的視窗(用第1個視窗):
+        => 發現其他兩個視窗都收到:
+        will@will-VirtualBox:~$ sudo strace -e trace=signal -p 8556
+        strace: Process 8556 attached
+        --- SIGHUP {si_signo=SIGHUP, si_code=SI_USER, si_pid=8429, si_uid=1000} ---
+        +++ killed by SIGHUP +++
+        
+        will@will-VirtualBox:~$ sudo strace -e trace=signal -p 8429
+        [sudo] password for will: 
+        strace: Process 8429 attached
+        --- SIGHUP {si_signo=SIGHUP, si_code=SI_KERNEL} ---
+        --- SIGCONT {si_signo=SIGCONT, si_code=SI_KERNEL} ---
+        sigreturn({mask=[CHLD]})                = -1 EINTR (Interrupted system call)
+    *    kill(-8556, SIGHUP)                     = 0
+        rt_sigprocmask(SIG_BLOCK, [CHLD TSTP TTIN TTOU], [CHLD], 8) = 0
+        rt_sigprocmask(SIG_SETMASK, [CHLD], NULL, 8) = 0
+        rt_sigaction(SIGHUP, {SIG_DFL, [], 0}, {0x80a1700, [HUP INT ILL TRAP ABRT BUS FPE USR1 SEGV USR2 PIPE ALRM TERM XCPU XFSZ VTALRM SYS], 0}, 8) = 0
+    *    kill(8429, SIGHUP)                      = 0
+        --- SIGHUP {si_signo=SIGHUP, si_code=SI_USER, si_pid=8429, si_uid=1000} ---
+        +++ killed by SIGHUP +++
+    
+    //測試直接透過kill發"SIGHUP"信號給nginx => 也會造成nginx退出
+    #kill -1 9123
+    
+    Note:
+    1) SIGHUP       2) SIGINT       3) SIGQUIT      4) SIGILL
+    5) SIGTRAP      6) SIGABRT      7) SIGBUS       8) SIGFPE
+    9) SIGKILL 
+
+//（2.5）终端关闭时如何让进程不退出
+
+# 是否可以讓程序nginx进程拦截（忽略）SIGHUP, 在(所屬)session結束時不被OS殺掉?
+    //a) 在程序開始加入下面代碼以忽略信號"SIGHUP":
+        signal(SIGHUP, SIG_IGN);
+    #執行程序nginx, 並關閉其視窗bash, 會發現:
+    will@will-VirtualBox:~$ ps -eo pid,ppid,sid,tty,pgrp,comm | grep -E 'bash|PID|nginx'
+      PID  PPID   SID TT        PGRP COMMAND
+     8533  8532  8533 pts/17    8533 bash
+     8995  8994  8995 pts/18    8995 bash
+     9299     1  9104 ?         9299 nginx
+     9365  9364  9365 pts/19    9365 bash
+    => nginx沒有tty, ppid變為1
+
+    //b) 使用setsid
+    1.  直接用cmd: setsid ./nginx => nginx啟動後直接被掛到ppid_1下, 與bash分離
+        9438     1  9438 ?         9438 nginx
+    2.  代碼中使用:
+        i>  加入setsid(); => 發現nginx仍在bash下?
+            #setsid函数不适合进程组组长调用
+        ii> 使用fork(), 並在child process使用setsid()
+
+    //c) 使用nohup
+	//nohup(no hang up不要挂断）,用该命令启动的进程跟上边忽略掉SIGHUP信号，道理相同
+	//该命令会把屏幕输出重新定位到当前目录的nohup.out
+    
+    
+//（2.6）后台运行 &
+	//后台执行，执行这个程序的同时，你的终端能够干其他事情；你如果不用 后台执行，那么你执行这个程序后
+	  //你的终端就只能等这个程序完成后才能继续执行其他的操作；
+	//可直接輸入"fg"切换到前台
+    
+    
